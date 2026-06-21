@@ -1,0 +1,5 @@
+*.db
+*.db-journal
+examplan
+examplan.exe
+.DS_Store

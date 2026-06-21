@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Examplan — планировщик подготовки к экзамену</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="grid-bg" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <div class="brand">
+      <svg class="brand__mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M3 24C7 24 9 12 13 12C17 12 15 20 19 20C23 20 25 8 29 8" stroke="var(--ink-2)" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="19" cy="20" r="2.6" fill="var(--amber)"/>
+      </svg>
+      <span>Examplan</span>
+    </div>
+    <nav class="topbar__nav">
+      <button class="navlink is-active" data-tab="planner" type="button">Планировщик</button>
+      <button class="navlink" data-tab="history" type="button">История</button>
+      <button class="navlink" data-tab="about" type="button">Как это считается</button>
+    </nav>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- ===================== ЭКРАН: ПЛАНИРОВЩИК ===================== -->
+  <section class="panel" id="tab-planner" data-tab-panel>
+
+    <div class="hero">
+      <p class="eyebrow">K(t), K′(t), ∫ K′(t)dt — математика твоей подготовки</p>
+      <h1 class="hero__title">Сколько часов в день учиться,<br>чтобы выжать максимум и не сгореть?</h1>
+      <p class="hero__sub">Введи параметры подготовки — система найдёт точку экстремума функции эффективности и построит прогноз роста знаний по дням.</p>
+    </div>
+
+    <div class="layout">
+
+      <!-- ФОРМА ВВОДА -->
+      <form class="card form-card" id="plan-form" novalidate>
+        <div class="field">
+          <label for="subject">Предмет</label>
+          <input type="text" id="subject" name="subject" placeholder="Математика" autocomplete="off" value="Математика">
+        </div>
+
+        <div class="field">
+          <label for="days">Дней до экзамена</label>
+          <div class="field__row">
+            <input type="range" id="days-range" min="1" max="120" value="30">
+            <input type="number" id="days" name="days" min="1" max="365" value="30" class="field__num">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="hours">Свободное время в день, ч</label>
+          <div class="field__row">
+            <input type="range" id="hours-range" min="0.5" max="12" step="0.5" value="6">
+            <input type="number" id="hours" name="hours" min="0.5" max="16" step="0.5" value="6" class="field__num">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="level">Текущий уровень знаний, %</label>
+          <div class="field__row">
+            <input type="range" id="level-range" min="0" max="100" value="40">
+            <input type="number" id="level" name="level" min="0" max="100" class="field__num" value="40">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Сложность предмета</label>
+          <div class="seg" id="difficulty-seg" role="radiogroup" aria-label="Сложность предмета">
+            <button type="button" class="seg__opt" data-val="1">1</button>
+            <button type="button" class="seg__opt" data-val="2">2</button>
+            <button type="button" class="seg__opt is-active" data-val="3">3</button>
+            <button type="button" class="seg__opt" data-val="4">4</button>
+            <button type="button" class="seg__opt" data-val="5">5</button>
+          </div>
+          <div class="seg__caption">
+            <span>проще</span><span>сложнее</span>
+          </div>
+        </div>
+
+        <div class="field field--checkbox">
+          <label class="checkbox">
+            <input type="checkbox" id="save-plan">
+            <span>Сохранить расчёт в историю</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-primary" id="calc-btn">
+          <span>Построить план</span>
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+
+      <!-- РЕЗУЛЬТАТЫ -->
+      <div class="results" id="results" hidden>
+
+        <div class="stat-row">
+          <div class="card stat">
+            <span class="stat__label">Оптимальное время</span>
+            <span class="stat__value" id="stat-hours">—</span>
+            <span class="stat__unit">часов в день</span>
+          </div>
+          <div class="card stat">
+            <span class="stat__label">Ожидаемый результат</span>
+            <span class="stat__value" id="stat-result">—</span>
+            <span class="stat__unit">к экзамену</span>
+          </div>
+          <div class="card stat" id="stat-risk-card">
+            <span class="stat__label">Риск выгорания</span>
+            <span class="stat__value stat__value--risk" id="stat-risk">—</span>
+            <span class="stat__unit" id="stat-risk-msg"></span>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="chart-card__head">
+            <h3>Эффективность E(x) от часов занятий</h3>
+            <p>Экстремум — пик кривой. Это и есть оптимальная нагрузка.</p>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-efficiency"></canvas>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="chart-card__head">
+            <h3>Рост знаний K(t) по дням</h3>
+            <p>Накопленные знания — интеграл скорости усвоения K′(t).</p>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-knowledge"></canvas>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="chart-card__head">
+            <h3>Скорость усвоения K′(t)</h3>
+            <p>Производная: насколько быстро растут знания в каждый день.</p>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-derivative"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="empty-state" id="empty-state">
+        <svg viewBox="0 0 64 64" width="56" height="56" fill="none" aria-hidden="true">
+          <path d="M8 50C16 50 20 22 28 22C36 22 32 38 40 38C48 38 52 14 56 14" stroke="var(--ink-3)" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+        <p>Заполни параметры слева — здесь появится график с оптимальной точкой.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== ЭКРАН: ИСТОРИЯ ===================== -->
+  <section class="panel" id="tab-history" data-tab-panel hidden>
+    <div class="hero hero--compact">
+      <p class="eyebrow">Сохранённые расчёты</p>
+      <h1 class="hero__title">История планов</h1>
+    </div>
+    <div class="history-list" id="history-list">
+      <p class="muted" id="history-empty">Пока нет сохранённых расчётов.</p>
+    </div>
+  </section>
+
+  <!-- ===================== ЭКРАН: КАК СЧИТАЕТСЯ ===================== -->
+  <section class="panel" id="tab-about" data-tab-panel hidden>
+    <div class="hero hero--compact">
+      <p class="eyebrow">Под капотом</p>
+      <h1 class="hero__title">Три инструмента матанализа</h1>
+    </div>
+
+    <div class="about-grid">
+      <div class="card about-card">
+        <span class="about-card__tag">Экстремум</span>
+        <h3>Поиск оптимальной нагрузки</h3>
+        <p>Эффективность E(x) — колоколообразная функция часов занятий в день. Она растёт, пока ты включаешься в работу, и падает, когда наступает усталость. Вершина кривой — единственная точка, где E′(x) = 0. Это и есть оптимум.</p>
+      </div>
+      <div class="card about-card">
+        <span class="about-card__tag">Производная</span>
+        <h3>Скорость усвоения</h3>
+        <p>K′(t) показывает, насколько быстро растут знания в конкретный день. В начале подготовки прогресс стремительный, затем кривая выравнивается — закон убывающей отдачи. Чем ближе к 100%, тем меньше прирост за тот же час занятий.</p>
+      </div>
+      <div class="card about-card">
+        <span class="about-card__tag">Интеграл</span>
+        <h3>Накопленные знания</h3>
+        <p>K(t) — это сумма всех ежедневных приростов K′(t) с первого дня подготовки до текущего момента. Численно интеграл считается как накопительная сумма: чем больше дней прошло с эффективной нагрузкой, тем выше итоговый уровень знаний.</p>
+      </div>
+    </div>
+
+    <div class="card formula-card">
+      <p class="formula-card__eq">K(t) = K₀ + ∫₀ᵗ K′(τ) dτ</p>
+      <p class="formula-card__caption">Накопленные знания к моменту t равны начальному уровню плюс интеграл скорости усвоения за всё прошедшее время.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>Examplan — учебный проект на Go. Математика подготовки к экзамену.</p>
+</footer>
+
+<script src="/static/js/charts.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

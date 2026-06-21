@@ -1,0 +1,7 @@
+.git
+.gitignore
+*.db
+*.db-journal
+README.md
+examplan
+examplan.exe
